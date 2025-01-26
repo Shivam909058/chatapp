@@ -19,7 +19,7 @@ from pathlib import Path
 from fastapi.security import HTTPBearer
 from security import validate_password_strength, generate_room_id
 import rate_limit
-import magic  # for file type verification
+import mimetypes  # Use this instead of magic
 from repeat_every import repeat_every
 
 app = FastAPI()
@@ -192,38 +192,36 @@ app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 async def upload_file(file: UploadFile = File(...)):
     try:
         # Check file size
-        file.file.seek(0, 2)
-        size = file.file.tell()
-        file.file.seek(0)
+        contents = await file.read()
+        size = len(contents)
+        await file.seek(0)
         
         if size > MAX_FILE_SIZE:
             raise HTTPException(status_code=400, detail="File too large")
         
-        # Verify file type
-        content_type = magic.from_buffer(await file.read(1024), mime=True)
-        await file.seek(0)
-        
-        if content_type not in ALLOWED_FILE_TYPES:
+        # Verify file type using file extension
+        file_type, _ = mimetypes.guess_type(file.filename)
+        if not file_type or file_type not in ALLOWED_FILE_TYPES:
             raise HTTPException(status_code=400, detail="File type not allowed")
         
+        # Generate unique filename
         file_extension = os.path.splitext(file.filename)[1]
         unique_filename = f"{uuid4()}{file_extension}"
         file_location = UPLOAD_DIR / unique_filename
         
+        # Save file
         with file_location.open("wb+") as file_object:
-            shutil.copyfileobj(file.file, file_object)
-        
-        # Get file size
-        file_size = file_location.stat().st_size
-        size_str = get_file_size_str(file_size)
+            file_object.write(contents)
         
         return JSONResponse({
             "url": f"/uploads/{unique_filename}",
             "filename": file.filename,
-            "size": size_str,
-            "type": file.content_type
+            "size": get_file_size_str(size),
+            "type": file_type
         })
+        
     except Exception as e:
+        print(f"Upload error: {str(e)}")  # Debug log
         raise HTTPException(status_code=500, detail=str(e))
 
 def get_file_size_str(size_in_bytes: int) -> str:

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Secure Chat Rooms</title>
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@6.5.95/css/materialdesignicons.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #128C7E;
+            --secondary-color: #25D366;
+            --error-color: #DC3545;
+            --success-color: #28A745;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 400px;
+            padding: 2rem;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 2rem;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 1rem;
+            text-align: center;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .form-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #666;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 4px;
+            background: var(--primary-color);
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .btn:hover {
+            background: var(--secondary-color);
+        }
+
+        .error-message {
+            color: var(--error-color);
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .success-message {
+            color: var(--success-color);
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .icon {
+            margin-right: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('join')">Join Room</div>
+            <div class="tab" onclick="switchTab('create')">Create Room</div>
+        </div>
+
+        <div class="form-container" id="joinForm">
+            <form action="/join" method="post">
+                <div class="form-group">
+                    <label>Your Name</label>
+                    <input type="text" name="name" required placeholder="Enter your name">
+                </div>
+                <div class="form-group">
+                    <label>Room ID</label>
+                    <input type="text" name="room_id" required placeholder="Enter room ID">
+                </div>
+                <div class="form-group">
+                    <label>Room Password</label>
+                    <input type="password" name="room_password" required placeholder="Enter room password">
+                </div>
+                <button type="submit" class="btn">
+                    <i class="mdi mdi-login icon"></i>Join Room
+                </button>
+                {% if error %}
+                <div class="error-message">
+                    <i class="mdi mdi-alert icon"></i>{{ error }}
+                </div>
+                {% endif %}
+            </form>
+        </div>
+
+        <div class="form-container" id="createForm" style="display: none;">
+            <form action="/create-room" method="post">
+                <div class="form-group">
+                    <label>Your Name</label>
+                    <input type="text" name="name" required placeholder="Enter your name">
+                </div>
+                <div class="form-group">
+                    <label>Room ID</label>
+                    <input type="text" name="room_id" required placeholder="Choose a room ID">
+                </div>
+                <div class="form-group">
+                    <label>Room Password</label>
+                    <input type="password" name="room_password" required placeholder="Choose a password">
+                </div>
+                <button type="submit" class="btn">
+                    <i class="mdi mdi-plus-circle icon"></i>Create Room
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelector(`.tab:${tab === 'join' ? 'first-child' : 'last-child'}`).classList.add('active');
+            document.getElementById('joinForm').style.display = tab === 'join' ? 'block' : 'none';
+            document.getElementById('createForm').style.display = tab === 'create' ? 'block' : 'none';
+        }
+
+        document.querySelector('#createForm form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            
+            try {
+                const response = await fetch('/create-room', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.redirected) {
+                    window.location.href = response.url;
+                } else {
+                    const data = await response.json();
+                    if (data.error) {
+                        alert(data.error);
+                    }
+                }
+            } catch (error) {
+                alert('Failed to create room');
+            }
+        });
+    </script>
+</body>
+</html>

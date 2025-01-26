@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Chat Room</title>
+    <link href="https://cdn.jsdelivr.net/npm/@mdi/font@6.5.95/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="https://emoji-css.afeld.me/emoji.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #128C7E;
+            --secondary-color: #25D366;
+            --chat-bg: #E5DDD5;
+            --sent-message-bg: #DCF8C6;
+            --received-message-bg: #FFFFFF;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background: var(--chat-bg);
+        }
+
+        .chat-header {
+            background: var(--primary-color);
+            color: white;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .room-avatar {
+            width: 40px;
+            height: 40px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .room-info {
+            flex: 1;
+        }
+
+        .room-id {
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .user-list {
+            font-size: 0.9rem;
+            opacity: 0.9;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .message {
+            max-width: 65%;
+            padding: 0.5rem 1rem;
+            border-radius: 7.5px;
+            position: relative;
+            animation: messageAppear 0.3s ease;
+        }
+
+        .message.self {
+            align-self: flex-end;
+            background: var(--sent-message-bg);
+        }
+
+        .message:not(.self) {
+            align-self: flex-start;
+            background: var(--received-message-bg);
+        }
+
+        .message-content {
+            margin-bottom: 0.25rem;
+            word-wrap: break-word;
+        }
+
+        .message-info {
+            font-size: 0.75rem;
+            color: #667781;
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .chat-input-container {
+            background: white;
+            padding: 1rem;
+            border-top: 1px solid #ddd;
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 0.5rem;
+            align-items: flex-end;
+            background: white;
+            border-radius: 24px;
+            padding: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .message-input {
+            flex: 1;
+            border: none;
+            padding: 0.5rem;
+            max-height: 120px;
+            resize: none;
+            font-family: inherit;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .action-button {
+            background: none;
+            border: none;
+            padding: 0.5rem;
+            cursor: pointer;
+            color: var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.3s;
+        }
+
+        .action-button:hover {
+            background-color: rgba(0,0,0,0.05);
+        }
+
+        .send-button {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .file-preview {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 8px;
+            margin-top: 0.5rem;
+        }
+
+        .file-attachment {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            background: rgba(0,0,0,0.05);
+            border-radius: 4px;
+            margin-top: 0.5rem;
+        }
+
+        .file-attachment a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .typing-indicator {
+            font-size: 0.9rem;
+            color: #666;
+            padding: 0.25rem 1rem;
+        }
+
+        @keyframes messageAppear {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .file-message {
+            background: white;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 4px 0;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .file-preview-container {
+            position: relative;
+            max-width: 300px;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .file-preview-container img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .file-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            color: #667781;
+        }
+
+        .file-name {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .file-size {
+            font-size: 0.8rem;
+        }
+
+        .download-button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: background 0.3s;
+        }
+
+        .download-button:hover {
+            background: var(--secondary-color);
+        }
+
+        .file-icon {
+            font-size: 2rem;
+            color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="room-avatar">
+                <i class="mdi mdi-account-group"></i>
+            </div>
+            <div class="room-info">
+                <div class="room-id">Room: {{ room_id }}</div>
+                <div class="user-list" id="user-list"></div>
+            </div>
+        </div>
+
+        <div class="chat-messages" id="messages"></div>
+        
+        <div class="typing-indicator" id="typing-indicator"></div>
+        
+        <div class="chat-input-container">
+            <div class="chat-input">
+                <input type="file" id="fileInput" onchange="handleFileSelect(event)">
+                <button class="action-button" onclick="document.getElementById('fileInput').click()">
+                    <i class="mdi mdi-attachment"></i>
+                </button>
+                <button class="action-button" id="emoji-button">
+                    <i class="mdi mdi-emoticon-outline"></i>
+                </button>
+                <textarea 
+                    class="message-input" 
+                    id="messageText" 
+                    placeholder="Type a message..."
+                    rows="1"
+                    onkeydown="if(event.keyCode == 13 && !event.shiftKey) { event.preventDefault(); sendMessage(); }">
+                </textarea>
+                <button class="action-button send-button" onclick="sendMessage()">
+                    <i class="mdi mdi-send"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/emoji-picker-element@1.12.1/index.js" type="module"></script>
+    <script>
+        const user_id = "{{ user_id }}";
+        const user_name = "{{ user_name }}";
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const ws = new WebSocket(`${wsProtocol}//${window.location.host}/ws/${user_id}`);
+        let typingTimeout;
+
+        // Auto-resize textarea
+        const messageInput = document.getElementById('messageText');
+        messageInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+
+        // File handling
+        async function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Check file size (5MB limit)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('File size must be less than 5MB');
+                return;
+            }
+
+            try {
+                // Show loading indicator
+                const messages = document.getElementById('messages');
+                const loadingId = 'loading-' + Date.now();
+                messages.insertAdjacentHTML('beforeend', `
+                    <div class="message self" id="${loadingId}">
+                        <div class="message-content">
+                            <div class="file-message">
+                                <div class="file-info">
+                                    <i class="mdi mdi-loading mdi-spin"></i>
+                                    Uploading ${file.name}...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `);
+                scrollToBottom();
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error('Upload failed');
+
+                const data = await response.json();
+                
+                // Remove loading message
+                document.getElementById(loadingId).remove();
+
+                // Send file message through WebSocket
+                ws.send(JSON.stringify({
+                    type: 'file',
+                    fileName: file.name,
+                    fileUrl: data.url,
+                    fileType: file.type,
+                    fileSize: data.size
+                }));
+            } catch (error) {
+                console.error('Error uploading file:', error);
+                alert('Failed to upload file');
+            }
+        }
+
+        // Message handling
+        ws.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            const messages = document.getElementById('messages');
+            
+            if (data.type === 'file') {
+                const messageClass = data.sender === user_id ? 'message self' : 'message';
+                let fileContent = '';
+                
+                if (data.fileType.startsWith('image/')) {
+                    fileContent = `
+                        <div class="file-message">
+                            <div class="file-preview-container">
+                                <img src="${data.fileUrl}" alt="${data.fileName}" style="max-width: 200px;">
+                            </div>
+                            <div class="file-info">
+                                <span class="file-name">${data.fileName}</span>
+                                <span class="file-size">${data.fileSize}</span>
+                                <a href="${data.fileUrl}" download class="download-button">
+                                    <i class="mdi mdi-download"></i>
+                                </a>
+                            </div>
+                        </div>`;
+                } else {
+                    const fileIcon = getFileIcon(data.fileType);
+                    fileContent = `
+                        <div class="file-message">
+                            <div class="file-info">
+                                <i class="mdi ${fileIcon} file-icon"></i>
+                                <div style="flex: 1">
+                                    <div class="file-name">${data.fileName}</div>
+                                    <div class="file-size">${data.fileSize}</div>
+                                </div>
+                                <a href="${data.fileUrl}" download class="download-button">
+                                    <i class="mdi mdi-download"></i>
+                                </a>
+                            </div>
+                        </div>`;
+                }
+                
+                const messageHTML = `
+                    <div class="${messageClass}">
+                        <div class="message-content">
+                            ${fileContent}
+                        </div>
+                        <div class="message-info">
+                            <span>${data.time}</span>
+                            <span>${data.sender_name}</span>
+                            ${data.sender === user_id ? '<i class="mdi mdi-check-all"></i>' : ''}
+                        </div>
+                    </div>`;
+                
+                messages.insertAdjacentHTML('beforeend', messageHTML);
+                scrollToBottom();
+            } else if (data.type === 'message') {
+                const messageClass = data.sender === user_id ? 'message self' : 'message';
+                let content = data.message;
+                
+                const messageHTML = `
+                    <div class="${messageClass}">
+                        <div class="message-content">${content}</div>
+                        <div class="message-info">
+                            <span>${data.time}</span>
+                            <span>${data.sender_name}</span>
+                            ${data.sender === user_id ? '<i class="mdi mdi-check-all"></i>' : ''}
+                        </div>
+                    </div>`;
+                
+                messages.insertAdjacentHTML('beforeend', messageHTML);
+                scrollToBottom();
+            } else if (data.type === 'user_list') {
+                const userList = document.getElementById('user-list');
+                userList.innerHTML = 'Online: ' + data.users.map(user => 
+                    `<span class="user-item">${user.name}</span>`
+                ).join(', ');
+            } else if (data.type === 'typing') {
+                document.getElementById('typing-indicator').textContent = 
+                    `${data.user_name} is typing...`;
+            } else if (data.type === 'stop_typing') {
+                document.getElementById('typing-indicator').textContent = '';
+            }
+        };
+
+        function sendMessage() {
+            const input = document.getElementById("messageText");
+            if (input.value.trim()) {
+                ws.send(JSON.stringify({
+                    type: 'message',
+                    message: input.value
+                }));
+                input.value = '';
+                input.style.height = 'auto';
+            }
+        }
+
+        function scrollToBottom() {
+            const messages = document.getElementById('messages');
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        // Typing indicator
+        messageInput.addEventListener('input', function() {
+            clearTimeout(typingTimeout);
+            ws.send(JSON.stringify({
+                type: 'typing',
+                user_name: user_name
+            }));
+            
+            typingTimeout = setTimeout(() => {
+                ws.send(JSON.stringify({
+                    type: 'stop_typing',
+                    user_name: user_name
+                }));
+            }, 1000);
+        });
+
+        // Emoji picker
+        const emojiButton = document.getElementById('emoji-button');
+        let emojiPicker;
+
+        emojiButton.addEventListener('click', () => {
+            if (!emojiPicker) {
+                emojiPicker = document.createElement('emoji-picker');
+                emojiPicker.classList.add('emoji-picker');
+                document.body.appendChild(emojiPicker);
+                
+                emojiPicker.addEventListener('emoji-click', event => {
+                    messageInput.value += event.detail.unicode;
+                });
+            }
+            emojiPicker.style.display = emojiPicker.style.display === 'none' ? 'block' : 'none';
+        });
+
+        // Close emoji picker when clicking outside
+        document.addEventListener('click', (e) => {
+            if (emojiPicker && !emojiPicker.contains(e.target) && !emojiButton.contains(e.target)) {
+                emojiPicker.style.display = 'none';
+            }
+        });
+
+        function getFileIcon(fileType) {
+            if (fileType.startsWith('image/')) return 'mdi-file-image';
+            if (fileType.startsWith('video/')) return 'mdi-file-video';
+            if (fileType.startsWith('audio/')) return 'mdi-file-music';
+            if (fileType.includes('pdf')) return 'mdi-file-pdf';
+            if (fileType.includes('word')) return 'mdi-file-word';
+            if (fileType.includes('excel')) return 'mdi-file-excel';
+            return 'mdi-file-document-outline';
+        }
+    </script>
+</body>
+</html>
+

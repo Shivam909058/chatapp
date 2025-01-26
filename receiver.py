@@ -20,7 +20,7 @@ from fastapi.security import HTTPBearer
 from security import validate_password_strength, generate_room_id
 import rate_limit
 import mimetypes  # Use this instead of magic
-from repeat_every import repeat_every
+from utils import repeat_every  # Updated import
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -253,9 +253,14 @@ async def create_room(
     
     return {"room_id": room_id}
 
-# Add cleanup task
-@app.on_event("startup")
+# Cleanup task
 @repeat_every(hours=24)
 async def cleanup_inactive_rooms():
-    Database.cleanup_inactive_rooms()
+    try:
+        Database.cleanup_inactive_rooms()
+    except Exception as e:
+        print(f"Error in cleanup task: {str(e)}")
+
+# Apply the cleanup task to the app
+cleanup_inactive_rooms(app)
 
